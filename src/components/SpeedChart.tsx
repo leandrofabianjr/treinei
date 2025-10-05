@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Area,
   AreaChart,
@@ -14,15 +14,23 @@ import type {
   VerticalCoordinatesGenerator,
 } from 'recharts/types/cartesian/CartesianGrid';
 import { type FitData, type FitDataRecord } from '../fit-file';
+import {
+  TrainningTemplateIntervalUnit,
+  type TrainningTemplate,
+} from '../TrainningTemplate';
 
-interface ChartDataPoint {
-  timestamp: Date;
-  speed: number;
+interface ChartDataPoint extends FitDataRecord {
   upperBound?: number;
   lowerBound?: number;
 }
 
-const CustomizedTooltip = ({ active, payload }: any) => {
+const CustomizedTooltip = ({
+  active,
+  payload,
+}: {
+  active: boolean;
+  payload: any;
+}) => {
   const isVisible = active && payload && payload.length;
   return (
     <div
@@ -39,9 +47,15 @@ const CustomizedTooltip = ({ active, payload }: any) => {
   );
 };
 
-const SpeedChart = ({ data }: { data: FitData }) => {
+const SpeedChart = ({
+  data,
+  trainning,
+}: {
+  data: FitData;
+  trainning?: TrainningTemplate | null;
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [chartData, setDisplayedRecords] = useState<ChartDataPoint[]>([]);
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
 
   const pointsPerPixel = 0.5;
   const renderTime = (value: Date) => {
@@ -76,18 +90,8 @@ const SpeedChart = ({ data }: { data: FitData }) => {
     records.forEach((record, i) => {
       speedSum += record.speed;
       if ((i + 1) % interpolationLength === 0) {
-        const timestamp = record.timestamp;
         const speed = speedSum / interpolationLength;
-        chartData.push({
-          timestamp,
-          speed,
-          lowerBound: 1,
-          ...(i > 3 && i < 200
-            ? {
-                upperBound: 5,
-              }
-            : {}),
-        });
+        chartData.push({ ...record, speed });
         speedSum = 0;
       }
     });
@@ -102,21 +106,51 @@ const SpeedChart = ({ data }: { data: FitData }) => {
         data.records.length / containerWidth / pointsPerPixel
       );
 
-      const displayedRecords = createChartDataArray(
-        data.records,
-        interpolationLength
-      );
-      setDisplayedRecords(displayedRecords);
-      console.log(displayedRecords.length);
-      console.log(displayedRecords.slice(0, 10));
+      const chartData = createChartDataArray(data.records, interpolationLength);
+      setChartData(chartData);
+      console.log(chartData.length);
+      console.log(chartData.slice(0, 10));
     }
   }, [data, containerRef.current?.offsetWidth]);
 
-  const generateVerticalGridCoordinates: VerticalCoordinatesGenerator = ({
-    width,
-  }) => {
-    return [width * 0.3, width * 0.8];
-  };
+  const generateVerticalGridCoordinates: VerticalCoordinatesGenerator =
+    useCallback(
+      ({ offset: { width } }) => {
+        if (!trainning || !data.activity.total_timer_time) return [];
+
+        const intervalTimesInSeconds: number[] = [];
+
+        trainning.intervals.forEach((interval) => {
+          switch (interval.unit) {
+            case TrainningTemplateIntervalUnit.Time:
+              intervalTimesInSeconds.push(interval.unitValue);
+              break;
+          }
+        });
+
+        const totalTimeInSeconds = data.activity.total_timer_time;
+
+        const gridCoordinates = intervalTimesInSeconds.map((seconds, i) => {
+          const lastTimeInSeconds = i == 0 ? 0 : intervalTimesInSeconds[i - 1];
+          const currentTimeInSeconds = lastTimeInSeconds + seconds;
+          console.log(
+            width,
+            'lastTimeInSeconds',
+            lastTimeInSeconds,
+            'seconds',
+            seconds
+          );
+          return Math.floor(
+            (width * currentTimeInSeconds) / totalTimeInSeconds
+          );
+        });
+
+        console.log('gridCoordinates', gridCoordinates);
+
+        return gridCoordinates;
+      },
+      [data.activity.total_timer_time, trainning]
+    );
 
   const generateHorizontalGridCoordinates: HorizontalCoordinatesGenerator = ({
     height,
@@ -153,16 +187,8 @@ const SpeedChart = ({ data }: { data: FitData }) => {
           fillOpacity={1}
           fill="url(#colorUv)"
         />
-        <Line
-          dataKey="upperBound"
-          stroke="#ff000033"
-          dot={false}
-        />
-        <Line
-          dataKey="lowerBound"
-          stroke="#ff000033"
-          dot={false}
-        />
+        <Line dataKey="upperBound" stroke="#ff000033" dot={false} />
+        <Line dataKey="lowerBound" stroke="#ff000033" dot={false} />
       </AreaChart>
     </ResponsiveContainer>
   );

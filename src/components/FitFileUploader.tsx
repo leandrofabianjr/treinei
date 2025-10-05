@@ -1,12 +1,20 @@
-import React, { useState, type ChangeEvent } from 'react';
+import { useEffect, useState, type ChangeEvent } from 'react';
+import type { FitData } from '../fit-file';
 import { useFitParser } from '../fit-file/useFitParser';
-import SpeedChart from './SpeedChart';
 
-const FitFileUploader: React.FC = () => {
+export interface FitFileUploaderProps {
+  onDataRead?: (data: FitData | null) => void;
+}
+
+const FitFileUploader = ({ onDataRead }: FitFileUploaderProps) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // Use the custom hook to parse the file
   const { data, loading, error } = useFitParser(selectedFile);
+
+  useEffect(() => {
+    onDataRead?.(data);
+  }, [onDataRead, data]);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -22,25 +30,9 @@ const FitFileUploader: React.FC = () => {
 
   return (
     <div>
-      <h2>.FIT File Parser</h2>
       <input type="file" accept=".fit" onChange={handleFileChange} />
-
-      {loading && <p>⏳ **Loading and Parsing...**</p>}
-
-      {error && <p style={{ color: 'red' }}>🚨 **Error:** {error}</p>}
-
-      {data && (
-        <div>
-          <h3>Fit Data:</h3>
-          <SpeedChart data={data} />
-          {/* <JsonView
-            data={data}
-            clickToExpandNode={true}
-            shouldExpandNode={allExpanded}
-            style={darkStyles}
-          /> */}
-        </div>
-      )}
+      {loading && <p>⏳ Carregando e Analisando...</p>}
+      {error && <p style={{ color: 'red' }}>🚨 Erro: {error}</p>}
     </div>
   );
 };
