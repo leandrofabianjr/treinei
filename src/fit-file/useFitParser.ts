@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import { type FitData } from './FitData';
-import { addPaceToRecord, readFitFile } from './utils';
+import { readFitFile } from './utils';
 
 /**
  * Parses a .fit file using fit-file-parser.
@@ -14,11 +14,7 @@ export const useFitParser = (file: File | null) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const parseFitData = (data: unknown): FitData => {
-    const fitData = data as FitData;
-    fitData.records = fitData.records.map(addPaceToRecord);
-    return fitData;
-  }
+
 
   useEffect(() => {
     if (!file) {
@@ -39,14 +35,13 @@ export const useFitParser = (file: File | null) => {
         readFitFile(
           buffer,
           (err: Error | null, data: unknown) => {
+            console.log('Iniciou a leitura do fit');
             if (err) {
               console.error('FitParser error:', err);
               setError(`Parsing failed: ${err.message}`);
               setData(null);
             } else if (data) {
-              console.log('Fit data:', data);
-              const parsedData = parseFitData(data);
-              setData(parsedData);
+              setData(data as FitData);
             }
             setLoading(false);
           },

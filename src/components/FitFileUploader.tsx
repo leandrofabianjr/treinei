@@ -14,7 +14,7 @@ const FitFileUploader = ({ onDataRead }: FitFileUploaderProps) => {
 
   useEffect(() => {
     onDataRead?.(data);
-  }, [onDataRead, data]);
+  }, [data]);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

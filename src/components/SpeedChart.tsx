@@ -13,25 +13,22 @@ import type {
   HorizontalCoordinatesGenerator,
   VerticalCoordinatesGenerator,
 } from 'recharts/types/cartesian/CartesianGrid';
-import { type FitData, type FitDataRecord } from '../fit-file';
-import {
-  TrainningTemplateIntervalUnit,
-  type TrainningTemplate,
-} from '../TrainningTemplate';
+import type { TrainningData } from '../App';
+import { type FitDataRecord } from '../fit-file';
 
 interface ChartDataPoint extends FitDataRecord {
   upperBound?: number;
   lowerBound?: number;
 }
 
-const CustomizedTooltip = ({
-  active,
-  payload,
-}: {
-  active: boolean;
-  payload: any;
-}) => {
+const CustomizedTooltip = (props) => {
+  const { active, payload, coordinate } = props;
   const isVisible = active && payload && payload.length;
+  // started at: 10/03/2025 10:49:49
+  const currentTime =
+    (payload?.[0]?.payload?.timestamp.getTime() -
+      new Date('2025-10-03 07:49:49').getTime()) /
+    1000;
   return (
     <div
       className="custom-tooltip"
@@ -40,6 +37,10 @@ const CustomizedTooltip = ({
       {isVisible && (
         <>
           <p>{payload?.[0]?.payload?.formattedPace}</p>
+          <p>{currentTime}</p>
+          <p>
+            x:{coordinate?.x - 80}, y:{coordinate?.y}
+          </p>
           <pre>{JSON.stringify(payload?.[0]?.payload, null, 2)}</pre>
         </>
       )}
@@ -47,19 +48,13 @@ const CustomizedTooltip = ({
   );
 };
 
-const SpeedChart = ({
-  data,
-  trainning,
-}: {
-  data: FitData;
-  trainning?: TrainningTemplate | null;
-}) => {
+const SpeedChart = ({ data }: { data: TrainningData }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
 
   const pointsPerPixel = 0.5;
   const renderTime = (value: Date) => {
-    const initialDate = data.activity.timestamp;
+    const initialDate = data.data.activity.timestamp;
     const currentTime = new Date(value.getTime() - initialDate.getTime());
     // print currentTime in format 00m00s
     const hours = currentTime.getHours();
@@ -100,62 +95,50 @@ const SpeedChart = ({
   };
 
   useEffect(() => {
-    if (data?.records?.length) {
+    if (data.data.records?.length) {
       const containerWidth = containerRef.current?.offsetWidth || 0;
       const interpolationLength = Math.floor(
-        data.records.length / containerWidth / pointsPerPixel
+        data.data.records.length / containerWidth / pointsPerPixel
       );
 
-      const chartData = createChartDataArray(data.records, interpolationLength);
+      const chartData = createChartDataArray(
+        data.data.records,
+        interpolationLength
+      );
       setChartData(chartData);
-      console.log(chartData.length);
-      console.log(chartData.slice(0, 10));
     }
   }, [data, containerRef.current?.offsetWidth]);
 
   const generateVerticalGridCoordinates: VerticalCoordinatesGenerator =
     useCallback(
-      ({ offset: { width } }) => {
-        if (!trainning || !data.activity.total_timer_time) return [];
+      ({ offset: { left, width } }) => {
+        if (!data) return [];
 
-        const intervalTimesInSeconds: number[] = [];
+        const totalTimeInSeconds = data.data.activity.total_timer_time;
 
-        trainning.intervals.forEach((interval) => {
-          switch (interval.unit) {
-            case TrainningTemplateIntervalUnit.Time:
-              intervalTimesInSeconds.push(interval.unitValue);
-              break;
-          }
+        let currentTimeInSeconds = 0;
+        const gridCoordinates = data.intervals.map((interval) => {
+          const seconds = interval.durationInSeconds;
+          currentTimeInSeconds += seconds;
+          const rate = currentTimeInSeconds / totalTimeInSeconds;
+          return left + rate * width;
         });
-
-        const totalTimeInSeconds = data.activity.total_timer_time;
-
-        const gridCoordinates = intervalTimesInSeconds.map((seconds, i) => {
-          const lastTimeInSeconds = i == 0 ? 0 : intervalTimesInSeconds[i - 1];
-          const currentTimeInSeconds = lastTimeInSeconds + seconds;
-          console.log(
-            width,
-            'lastTimeInSeconds',
-            lastTimeInSeconds,
-            'seconds',
-            seconds
-          );
-          return Math.floor(
-            (width * currentTimeInSeconds) / totalTimeInSeconds
-          );
-        });
-
-        console.log('gridCoordinates', gridCoordinates);
 
         return gridCoordinates;
       },
-      [data.activity.total_timer_time, trainning]
+      [data]
     );
 
-  const generateHorizontalGridCoordinates: HorizontalCoordinatesGenerator = ({
-    height,
-  }) => {
-    return [height * 0.3, height * 0.8];
+  const generateHorizontalGridCoordinates: HorizontalCoordinatesGenerator = (
+    props
+  ) => {
+    const {
+      height,
+      yAxis: { niceTicks, range },
+    } = props;
+    const lastTick = Number(niceTicks?.[niceTicks.length - 1]);
+    const lastRange = Number(range?.[range.length - 1]);
+    return [(1 - data.statistics.averageSpeed / lastTick) * height - lastRange];
   };
   return (
     <ResponsiveContainer ref={containerRef} height={300} width="100%">
