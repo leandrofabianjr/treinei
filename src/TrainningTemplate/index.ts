@@ -21,10 +21,10 @@ const convertZeppTrainningIntervalNodeToTrainningInterval = ({ trainingInterval:
     '1': TrainningTemplateIntervalUnit.Time,
   }[intervalData.intervalUnit]!;
 
-  const paceBounds = Number(intervalData.alertRule) == 1
+  const speedBounds = Number(intervalData.alertRule) == 1
     ? {
-      min: Number(intervalData.alertRuleDetail.split('-')[0]),
-      max: Number(intervalData.alertRuleDetail.split('-')[1]),
+      min: 1 / Number(intervalData.alertRuleDetail.split('-')[0]) * 1000,
+      max: 1 / Number(intervalData.alertRuleDetail.split('-')[1]) * 1000,
     }
     : undefined;
 
@@ -32,7 +32,7 @@ const convertZeppTrainningIntervalNodeToTrainningInterval = ({ trainingInterval:
     type,
     unit,
     unitValue: Number(intervalData.intervalUnitValue),
-    paceBounds,
+    speedBounds,
     description: intervalData.intervalDesc,
   } as TrainningTemplateInterval;
 }
@@ -92,10 +92,7 @@ export interface TrainningTemplateInterval {
   type: TrainningTemplateIntervalType;
   unit: TrainningTemplateIntervalUnit;
   unitValue: number;
-  paceBounds?: {
-    min: number;
-    max: number;
-  };
+  speedBounds?: { min: number; max: number; };
   description: string;
 }
 

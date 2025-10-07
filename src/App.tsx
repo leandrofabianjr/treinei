@@ -10,17 +10,31 @@ import {
   type TrainningTemplate,
 } from './TrainningTemplate';
 
+export enum TrainningIntervalIntensity {
+  None,
+  Walking,
+  Jogging,
+  Z1,
+  Z2,
+  Z3,
+  Z4,
+}
+
 export interface TrainningInterval {
   startTime: Date;
   endTime: Date;
   durationInSeconds: number;
   distanceInMeters: number;
+  speedBounds?: { min: number; max: number };
+  intensity: TrainningIntervalIntensity;
+  description?: string;
 }
 
 export interface TrainningData {
   template: TrainningTemplate;
   data: FitData;
   intervals: TrainningInterval[];
+  kmTimesInSeconds: number[];
   statistics: {
     totalTime: number;
     totalDistance: number;
@@ -34,8 +48,12 @@ function App() {
     null
   );
   const [trainning, setTrainning] = useState<TrainningTemplate | null>(null);
-  const { addPaceToRecords, createIntervalsData, createStatistics } =
-    useStatistics();
+  const {
+    addPaceToRecords,
+    createIntervalsData,
+    createStatistics,
+    createEachDistanceTimesInSeconds,
+  } = useStatistics();
 
   useEffect(() => {
     const trainningData = loadTrainningTemplate();
@@ -46,10 +64,20 @@ function App() {
     console.log('passou aqui');
     if (fitData && trainning) {
       const records = addPaceToRecords(fitData.records);
+      const sortedRecords = [...records].sort((a, b) => a.speed - b.speed);
+      console.log(sortedRecords.map((r) => ({ t: r.timestamp, s: r.speed })));
+
       const data = { ...fitData, records };
       const intervals = createIntervalsData(data, trainning);
+      const kmTimesInSeconds = createEachDistanceTimesInSeconds(data);
       const statistics = createStatistics(intervals);
-      setTrainningData({ template: trainning, data, intervals, statistics });
+      setTrainningData({
+        template: trainning,
+        data,
+        intervals,
+        kmTimesInSeconds,
+        statistics,
+      });
     } else {
       setTrainningData(trainningData);
     }
@@ -68,7 +96,7 @@ function App() {
             {trainningData && (
               <div>
                 <h3>Fit Data:</h3>
-                <SpeedChart data={trainningData} trainning={trainning} />
+                <SpeedChart data={trainningData} />
                 <JsonView
                   data={trainningData}
                   clickToExpandNode={true}

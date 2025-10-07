@@ -1,4 +1,4 @@
-import type { TrainningInterval } from "../../App";
+import { TrainningIntervalIntensity, type TrainningInterval } from "../../App";
 import { addPaceToRecord, calculatePaceDecimal, type FitData, type FitDataRecord } from "../../fit-file";
 import { TrainningTemplateIntervalUnit, type TrainningTemplate, type TrainningTemplateInterval } from "../../TrainningTemplate";
 import { calculateDistanceBetweenTimes, getEndOfIntervalFromDistance } from "./calculate-distance-between-times";
@@ -10,38 +10,54 @@ export const useStatistics = () => {
   }
 
   const getNextIntervalData = (startTime: Date, interval: TrainningTemplateInterval, fitData: FitData): TrainningInterval => {
-    switch (interval.unit) {
+    const { unit, unitValue, speedBounds, description } = interval;
+    const intensity = {
+      'caminhada': TrainningIntervalIntensity.Walking,
+      'trote': TrainningIntervalIntensity.Jogging,
+      'z1': TrainningIntervalIntensity.Z1,
+      'z2': TrainningIntervalIntensity.Z2,
+      'z3': TrainningIntervalIntensity.Z3,
+      'z4': TrainningIntervalIntensity.Z4
+    }[description?.trim()?.toLowerCase()] || TrainningIntervalIntensity.None;
+
+    const intervalData = { startTime, intensity, description, speedBounds } as TrainningInterval;
+
+    switch (unit) {
       case TrainningTemplateIntervalUnit.Time:
         {
-          const endTime = new Date(startTime.getTime() + interval.unitValue * 1000);
-          const durationInSeconds = interval.unitValue;
+          const endTime = new Date(startTime.getTime() + unitValue * 1000);
           const distanceInMeters = calculateDistanceBetweenTimes(fitData.records, startTime, endTime);
-          return { startTime, endTime, durationInSeconds, distanceInMeters };
+          intervalData.endTime = endTime;
+          intervalData.durationInSeconds = unitValue;
+          intervalData.distanceInMeters = distanceInMeters;
         }
+        break;
       case TrainningTemplateIntervalUnit.Distance:
         {
           const endOfInterval = getEndOfIntervalFromDistance(
             fitData.records,
             startTime,
-            interval.unitValue
+            unitValue
           );
           if (!endOfInterval) {
             throw new Error("Fim de intervalo não encontrado!");
           }
-          const endTime = endOfInterval.timestamp;
-          const durationInSeconds = (endOfInterval.timestamp.getTime() - startTime.getTime()) / 1000;
-          const distanceInMeters = interval.unitValue;
-          return { startTime, endTime, durationInSeconds, distanceInMeters };
+          const endTime = endOfInterval.record.timestamp;
+          const durationInSeconds = (endTime.getTime() - startTime.getTime()) / 1000;
+          intervalData.endTime = endTime;
+          intervalData.durationInSeconds = durationInSeconds;
+          intervalData.distanceInMeters = unitValue;
         }
-      default:
-        throw new Error("Unidade de intervalo não suportada!");
+        break;
     }
+
+    return intervalData;
   }
 
 
   const createIntervalsData = (fitData: FitData, trainning: TrainningTemplate): TrainningInterval[] => {
     let currentTime = fitData.activity.timestamp;
-    const intervals: TrainningInterval[] = trainning.intervals.slice(0, -1).map((interval) => {
+    const intervals: TrainningInterval[] = trainning.intervals.map((interval) => {
       const intervalData = getNextIntervalData(currentTime, interval, fitData);
       currentTime = intervalData.endTime;
       return intervalData;
@@ -49,6 +65,24 @@ export const useStatistics = () => {
 
     return intervals;
   };
+
+  const createEachDistanceTimesInSeconds = (fitData: FitData, eachMeters = 1000): number[] => {
+    const kmTimesInSeconds: number[] = [];
+    let firstRecord: FitDataRecord | null = fitData.records[0];
+    while (firstRecord) {
+      const endOfInterval = getEndOfIntervalFromDistance(
+        fitData.records,
+        firstRecord.timestamp,
+        eachMeters
+      );
+      if (!endOfInterval) break;
+      const { index, record } = endOfInterval;
+      kmTimesInSeconds.push((record.timestamp.getTime() - firstRecord.timestamp.getTime()) / 1000);
+      firstRecord = index == fitData.records.length - 1 ? null : fitData.records[index + 1];
+    }
+
+    return kmTimesInSeconds;
+  }
 
   const createStatistics = (intervals: TrainningInterval[]) => {
     const totalTime = intervals.reduce(
@@ -67,6 +101,7 @@ export const useStatistics = () => {
   return {
     addPaceToRecords,
     createIntervalsData,
+    createEachDistanceTimesInSeconds,
     createStatistics,
   };
 };

@@ -117,7 +117,7 @@ export const getEndOfIntervalFromDistance = (
   records: FitDataRecord[],
   startTime: Date,
   distance: number
-): FitDataRecord | null => {
+): { index: number, record: FitDataRecord } | null => {
   if (!records || records.length < 2) {
     return null;
   }
@@ -126,7 +126,7 @@ export const getEndOfIntervalFromDistance = (
   let previousRecord: FitDataRecord | null = null;
   let startedTracking = false;
 
-  for (const currentRecord of records) {
+  for (const [index, currentRecord] of records.entries()) {
     const currentTimeMs = currentRecord.timestamp.getTime();
 
     // Start tracking when the timestamp hits or exceeds the startTime
@@ -154,7 +154,7 @@ export const getEndOfIntervalFromDistance = (
     }
 
     if (totalDistanceMeters >= distance) {
-      return currentRecord;
+      return { index, record: currentRecord };
     }
   }
 
