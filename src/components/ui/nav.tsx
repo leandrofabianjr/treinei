@@ -43,7 +43,16 @@ export default function Nav() {
       <Box bg={useColorModeValue('gray.100', 'gray.900')} px={4}>
         <Flex h={16} alignItems={'center'} justifyContent={'space-between'}>
           <NavLink>
-            <Image w="10" h="10" src="./icon.svg" />
+            <Image
+              w="10"
+              h="10"
+              src="./icon.svg"
+              style={
+                colorMode == 'dark'
+                  ? { filter: 'invert(93%) hue-rotate(180deg)' }
+                  : {}
+              }
+            />
           </NavLink>
 
           <Flex alignItems={'center'}>
