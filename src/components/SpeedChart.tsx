@@ -3,23 +3,25 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
+  Label,
   Line,
-  ReferenceArea,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
-import type {
-  HorizontalCoordinatesGenerator,
-  VerticalCoordinatesGenerator,
-} from 'recharts/types/cartesian/CartesianGrid';
+import type { VerticalCoordinatesGenerator } from 'recharts/types/cartesian/CartesianGrid';
 import {
   TrainningIntervalIntensity,
   type TrainningData,
   type TrainningInterval,
 } from '../App';
-import { type FitDataRecord } from '../fit-file';
+import {
+  calculatePaceDecimal,
+  formatPace,
+  type FitDataRecord,
+} from '../fit-file';
 
 interface ChartPointData extends FitDataRecord {
   upperBound?: number;
@@ -81,6 +83,19 @@ interface ChartIntervalData {
   color: string;
 }
 
+interface ChartTickData {
+  value: number;
+  label: string;
+}
+
+interface ChartData {
+  points: ChartPointData[];
+  intervals: ChartIntervalData[];
+  ticksSecondsAxis: ChartTickData[];
+  ticksSpeedAxis: ChartTickData[];
+  ticksAltitudeAxis: ChartTickData[];
+}
+
 /**
  * Interpolates the given records with a specified interpolation length.
  * Calculates the interpolated speed between each records in a block.
@@ -90,7 +105,7 @@ interface ChartIntervalData {
  * @param interpolationLength The length of each interpolation block.
  * @returns The list of interpolated FitDataRecords with pace.
  */
-const createChartDataArray = (
+const createChartPointsDataArray = (
   records: FitDataRecord[],
   interpolationLength: number,
   intervals: TrainningInterval[]
@@ -129,8 +144,13 @@ const createChartDataArray = (
 
 const SpeedChart = ({ data }: { data: TrainningData }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [chartData, setChartData] = useState<ChartPointData[]>([]);
-  const [intervalsData, setIntervalsData] = useState<ChartIntervalData[]>([]);
+  const [chartData, setChartData] = useState<ChartData>({
+    points: [],
+    intervals: [],
+    ticksSecondsAxis: [],
+    ticksSpeedAxis: [],
+    ticksAltitudeAxis: [],
+  });
 
   const pointsPerPixel = 0.5;
   const renderTime = (value: Date) => {
@@ -154,17 +174,16 @@ const SpeedChart = ({ data }: { data: TrainningData }) => {
         data.data.records.length / containerWidth / pointsPerPixel
       );
 
-      const chartData = createChartDataArray(
+      const points = createChartPointsDataArray(
         data.data.records,
         interpolationLength,
         data.intervals
       );
-      setChartData(chartData);
 
       const totalTimeInSeconds = data.data.activity.total_timer_time;
 
       let currentTimeInSeconds = 0;
-      const intervalsData = data.intervals.map((interval) => {
+      const intervals = data.intervals.map((interval) => {
         const intervalData: ChartIntervalData = {
           startRate: currentTimeInSeconds / totalTimeInSeconds,
           color: getColorForInterval(interval),
@@ -173,53 +192,65 @@ const SpeedChart = ({ data }: { data: TrainningData }) => {
         return intervalData;
       });
 
-      console.log(intervalsData);
-      setIntervalsData(intervalsData);
+      const ticksSecondsAxis = data.kmTimesInSeconds.map((seconds, i) => ({
+        value: seconds,
+        label: `${i + 1}km`,
+      }));
+
+      const maxSpeed = Math.max(...data.data.records.map((p) => p.speed));
+      const averageSpeed = Number(data.statistics.averageSpeed.toFixed(2));
+      const minSpeed = Math.min(...data.data.records.map((p) => p.speed));
+      const ticksSpeedAxis = [minSpeed, averageSpeed, maxSpeed].map(
+        (speed) => ({
+          value: speed,
+          label: formatPace(calculatePaceDecimal(speed)),
+        })
+      );
+
+      const maxAltitude = Math.max(...data.data.records.map((p) => p.altitude));
+      const minAltitude = Math.min(...data.data.records.map((p) => p.altitude));
+      const ticksAltitudeAxis = [minAltitude, maxAltitude].map((altitude) => ({
+        value: Math.round(altitude),
+        label: `${altitude.toFixed(0)} m`,
+      }));
+
+      console.log(ticksSpeedAxis);
+
+      setChartData({
+        points,
+        intervals,
+        ticksSecondsAxis,
+        ticksSpeedAxis,
+        ticksAltitudeAxis,
+      });
     }
   }, [data, containerRef.current?.offsetWidth]);
 
   const generateVerticalGridCoordinates: VerticalCoordinatesGenerator =
     useCallback(
       ({ offset: { left, width } }) => {
-        if (!intervalsData?.length) return [];
+        if (!chartData.intervals.length) return [];
         const totalTimeInSeconds = data.data.activity.total_timer_time;
-        let currentTimeInSeconds = 0;
-        const gridCoordinates = data.kmTimesInSeconds.map((seconds) => {
-          currentTimeInSeconds += seconds;
-          const rate = currentTimeInSeconds / totalTimeInSeconds;
+        const gridCoordinates = chartData.ticksSecondsAxis.map((seconds) => {
+          const rate = seconds.value / totalTimeInSeconds;
           return left + rate * width;
         });
         return gridCoordinates;
       },
-      [
-        data.data.activity.total_timer_time,
-        data.kmTimesInSeconds,
-        intervalsData?.length,
-      ]
+      [data.data.activity.total_timer_time, chartData]
     );
 
-  const generateHorizontalGridCoordinates: HorizontalCoordinatesGenerator = (
-    props
-  ) => {
-    const {
-      height,
-      yAxis: { niceTicks, range },
-    } = props;
-    const lastTick = Number(niceTicks?.[niceTicks.length - 1]);
-    const lastRange = Number(range?.[range.length - 1]);
-    return [(1 - data.statistics.averageSpeed / lastTick) * height - lastRange];
-  };
   return (
     <>
       <ResponsiveContainer ref={containerRef} height={150} width="100%">
         <AreaChart
-          margin={{ top: 5, right: 30, left: 20, bottom: 0 }}
-          data={chartData}
+          margin={{ top: 20, right: 30, left: 20, bottom: 0 }}
+          data={chartData.points}
           syncId="syncronized-graphs"
         >
           <defs>
             <linearGradient id="splitColor" x1="0" y1="0" x2="1" y2="0">
-              {intervalsData.map((intervalData, i, intervalsData) => {
+              {chartData.intervals.map((intervalData, i, intervalsData) => {
                 const start = intervalData.startRate;
                 const end =
                   i == intervalsData.length - 1
@@ -235,45 +266,41 @@ const SpeedChart = ({ data }: { data: TrainningData }) => {
               })}
             </linearGradient>
           </defs>
-          <XAxis dataKey="time" tick={false} />
+          <XAxis dataKey="time" tick={false} height={0} />
+
+          <Label value="Velocidade" offset={0} position="insideTop" />
           <YAxis
-            domain={[0, (dataMax) => Math.ceil(dataMax)]}
-            tickCount={2}
-            tickFormatter={(value) => `${value} m/s`}
-          />
-          <CartesianGrid
-            verticalCoordinatesGenerator={generateVerticalGridCoordinates}
-            horizontalCoordinatesGenerator={generateHorizontalGridCoordinates}
+            padding={{ top: 25, bottom: 10 }}
+            strokeOpacity={0}
+            ticks={chartData.ticksSpeedAxis.map((tick) => tick.value)}
+            tickFormatter={(value) => formatPace(calculatePaceDecimal(value))}
           />
           <Tooltip content={CustomizedTooltip} />
           <Area
             type="monotone"
             dataKey="speed"
-            stroke="#8884d8"
+            strokeOpacity={0}
             fillOpacity={1}
             fill="url(#splitColor)"
           />
-          <Line dataKey="speedBoundMin" stroke="#00ff73aa" dot={false} />
-          <Line dataKey="speedBoundMax" stroke="#00ff73aa" dot={false} />
-          <ReferenceArea
-            x1={data.intervals[1].startTime.toString()}
-            x2={data.intervals[1].endTime.toString()}
-            y1={data.template.intervals[1].speedBounds?.min}
-            y2={data.template.intervals[1].speedBounds?.max}
-            stroke="red"
-            strokeOpacity={0.3}
+          <Line dataKey="speedBoundMin" stroke="#000000" dot={false} />
+          <Line dataKey="speedBoundMax" stroke="#000000" dot={false} />
+          <CartesianGrid
+            verticalCoordinatesGenerator={generateVerticalGridCoordinates}
+            horizontal={false}
           />
+          <ReferenceLine y={data.statistics.averageSpeed} stroke="#ffff00" />
         </AreaChart>
       </ResponsiveContainer>
       <ResponsiveContainer ref={containerRef} height={150} width="100%">
         <AreaChart
-          margin={{ top: 0, right: 30, left: 20, bottom: 5 }}
-          data={chartData}
+          margin={{ top: 0, right: 30, left: 20, bottom: 15 }}
+          data={chartData.points}
           syncId="syncronized-graphs"
         >
           <defs>
             <linearGradient id="splitColor" x1="0" y1="0" x2="1" y2="0">
-              {intervalsData.map((intervalData, i, intervalsData) => {
+              {chartData.intervals.map((intervalData, i, intervalsData) => {
                 const start = intervalData.startRate;
                 const end =
                   i == intervalsData.length - 1
@@ -282,25 +309,39 @@ const SpeedChart = ({ data }: { data: TrainningData }) => {
                 const color = intervalData.color;
                 return (
                   <>
-                    <stop offset={start} stopColor={color} />
-                    <stop offset={end} stopColor={color} />
+                    <stop
+                      key={`stop-gradient-${i}-min`}
+                      offset={start}
+                      stopColor={color}
+                    />
+                    <stop
+                      key={`stop-gradient-${i}-max`}
+                      offset={end}
+                      stopColor={color}
+                    />
                   </>
                 );
               })}
             </linearGradient>
           </defs>
-          <XAxis dataKey="time" tick={false} />
+          <Label value="Altitude" offset={15} position="insideTop" />
+          <XAxis dataKey="time" tick={false} height={0} />
           <YAxis
+            padding={{ top: 25 }}
             domain={[
               (dataMin) => Math.floor(dataMin),
               (dataMax) => Math.ceil(dataMax),
             ]}
-            tickCount={2}
-            tickFormatter={(value) => `${value} m`}
+            strokeOpacity={0}
+            tickFormatter={(value) =>
+              chartData.ticksAltitudeAxis.find((tick) => tick.value === value)
+                ?.label || ''
+            }
+            ticks={chartData.ticksAltitudeAxis.map((tick) => tick.value)}
           />
           <CartesianGrid
             verticalCoordinatesGenerator={generateVerticalGridCoordinates}
-            horizontalCoordinatesGenerator={generateHorizontalGridCoordinates}
+            horizontal={false}
           />
           {/* <Tooltip content={CustomizedTooltip} /> */}
           <Area

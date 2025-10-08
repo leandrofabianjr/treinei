@@ -44,7 +44,7 @@ export const calculatePaceDecimal = (speedMs: number): number => {
  */
 export const formatPace = (decimalMinutes: number): string => {
   if (decimalMinutes === 0) {
-    return '0:00'; // Or "Stopped"
+    return `0'00"`; // Or "Stopped"
   }
 
   const minutes = Math.floor(decimalMinutes);
@@ -54,7 +54,7 @@ export const formatPace = (decimalMinutes: number): string => {
   // Pad the seconds with a leading zero if necessary
   const formattedSeconds = String(seconds).padStart(2, '0');
 
-  return `${minutes}:${formattedSeconds}`;
+  return `${minutes}'${formattedSeconds}"`;
 };
 
 

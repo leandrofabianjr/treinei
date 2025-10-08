@@ -68,17 +68,18 @@ export const useStatistics = () => {
 
   const createEachDistanceTimesInSeconds = (fitData: FitData, eachMeters = 1000): number[] => {
     const kmTimesInSeconds: number[] = [];
-    let firstRecord: FitDataRecord | null = fitData.records[0];
-    while (firstRecord) {
+    const startTime = fitData.activity.timestamp;
+    let startRecord: FitDataRecord | null = fitData.records[0];
+    while (startRecord) {
       const endOfInterval = getEndOfIntervalFromDistance(
         fitData.records,
-        firstRecord.timestamp,
+        startRecord.timestamp,
         eachMeters
       );
       if (!endOfInterval) break;
       const { index, record } = endOfInterval;
-      kmTimesInSeconds.push((record.timestamp.getTime() - firstRecord.timestamp.getTime()) / 1000);
-      firstRecord = index == fitData.records.length - 1 ? null : fitData.records[index + 1];
+      kmTimesInSeconds.push((record.timestamp.getTime() - startTime.getTime()) / 1000);
+      startRecord = index == fitData.records.length - 1 ? null : fitData.records[index + 1];
     }
 
     return kmTimesInSeconds;

@@ -71,6 +71,7 @@ function App() {
       const intervals = createIntervalsData(data, trainning);
       const kmTimesInSeconds = createEachDistanceTimesInSeconds(data);
       const statistics = createStatistics(intervals);
+      console.log(kmTimesInSeconds);
       setTrainningData({
         template: trainning,
         data,
