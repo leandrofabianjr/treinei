@@ -10,13 +10,7 @@ export default async function TrainningTemplateReader({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const params = await searchParams;
-  const url = new URL(params.url?.toString() || "");
-  console.log("url", url.toString());
-  const response = await fetch(url);
-
-  if (response.ok) {
-    console.log("data", await response.json());
-  }
+  const url = params.url?.toString() || "";
 
   if (!url) {
     return (
