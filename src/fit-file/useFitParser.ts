@@ -35,7 +35,6 @@ export const useFitParser = (file: File | null) => {
         readFitFile(
           buffer,
           (err: Error | null, data: unknown) => {
-            console.log('Iniciou a leitura do fit');
             if (err) {
               console.error('FitParser error:', err);
               setError(`Parsing failed: ${err.message}`);

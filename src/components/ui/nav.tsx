@@ -61,7 +61,7 @@ export default function Nav() {
                   <Button variant="ghost" size="sm">
                     <Avatar.Root size="sm">
                       <Avatar.Fallback name="Nome do usuário" />
-                      <Avatar.Image src="https://avatars.dicebear.com/api/male/username.svg" />
+                      <Avatar.Image />
                     </Avatar.Root>
                   </Button>
                 </Menu.Trigger>
@@ -72,7 +72,7 @@ export default function Nav() {
                       <Center>
                         <Avatar.Root size="sm">
                           <Avatar.Fallback name="Nome do usuário" />
-                          <Avatar.Image src="https://avatars.dicebear.com/api/male/username.svg" />
+                          <Avatar.Image />
                         </Avatar.Root>
                       </Center>
                       <br />

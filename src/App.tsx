@@ -1,86 +1,37 @@
-import { useEffect, useState } from 'react';
+import { Container, Heading } from '@chakra-ui/react';
+import { useState } from 'react';
 import { allExpanded, defaultStyles, JsonView } from 'react-json-view-lite';
 import FitFileUploader from './components/FitFileUploader';
 import SpeedChart from './components/SpeedChart';
-import type { FitData } from './fit-file';
-import { useStatistics } from './hooks/use-statistics';
-import {
-  loadTrainningTemplate,
-  type TrainningTemplate,
-} from './TrainningTemplate';
-import { Container, Heading } from '@chakra-ui/react';
 import Nav from './components/ui/nav';
-
-export enum TrainningIntervalIntensity {
-  None,
-  Walking,
-  Jogging,
-  Z1,
-  Z2,
-  Z3,
-  Z4,
-}
-
-export interface TrainningInterval {
-  startTime: Date;
-  endTime: Date;
-  durationInSeconds: number;
-  distanceInMeters: number;
-  speedBounds?: { min: number; max: number };
-  intensity: TrainningIntervalIntensity;
-  description?: string;
-}
-
-export interface TrainningData {
-  template: TrainningTemplate;
-  data: FitData;
-  intervals: TrainningInterval[];
-  kmTimesInSeconds: number[];
-  statistics: {
-    totalTime: number;
-    totalDistance: number;
-    averageSpeed: number;
-    averagePace: number;
-  };
-}
+import type { FitData } from './fit-file';
+import { buildTrainningData } from './TrainningTemplate/hooks/use-statistics';
+import type {
+  TrainningData,
+  TrainningTemplate,
+} from './TrainningTemplate/types';
+import { ZeppTrainningTemplateUploader } from './TrainningTemplate/ZeppTrainningTemplate';
 
 function App() {
   const [trainningData, setTrainningData] = useState<TrainningData | null>(
     null
   );
   const [trainning, setTrainning] = useState<TrainningTemplate | null>(null);
-  const {
-    addPaceToRecords,
-    createIntervalsData,
-    createStatistics,
-    createEachDistanceTimesInSeconds,
-  } = useStatistics();
 
-  useEffect(() => {
-    const trainningData = loadTrainningTemplate();
-    setTrainning(trainningData);
-  }, []);
+  // useEffect(() => {
+  //   const trainningData = loadTrainningTemplate();
+  //   setTrainning(trainningData);
+  // }, []);
+
+  const onTrainningTemplateRead = (trainning: TrainningTemplate | null) => {
+    if (trainning) {
+      setTrainning(trainning);
+    }
+  };
 
   const onDataFitRead = (fitData: FitData | null) => {
-    console.log('passou aqui');
     if (fitData && trainning) {
-      const records = addPaceToRecords(fitData.records);
-      const sortedRecords = [...records].sort((a, b) => a.speed - b.speed);
-      console.log(sortedRecords.map((r) => ({ t: r.timestamp, s: r.speed })));
-
-      const data = { ...fitData, records };
-      const intervals = createIntervalsData(data, trainning);
-      const kmTimesInSeconds = createEachDistanceTimesInSeconds(data);
-      const statistics = createStatistics(intervals);
-      console.log(kmTimesInSeconds);
-      setTrainningData({
-        template: trainning,
-        data,
-        intervals,
-        kmTimesInSeconds,
-        statistics,
-      });
-    } else {
+      const trainningData = buildTrainningData(fitData, trainning);
       setTrainningData(trainningData);
     }
   };
@@ -90,7 +41,7 @@ function App() {
       <Nav />
       <Container>
         <Heading>.FIT File Parser</Heading>
-        {/* <ZeppTrainningTemplate onDataRead={setTrainning} /> */}
+        <ZeppTrainningTemplateUploader onDataRead={onTrainningTemplateRead} />
 
         {trainning && (
           <>

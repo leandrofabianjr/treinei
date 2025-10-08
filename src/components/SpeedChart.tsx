@@ -1,4 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  TrainningIntervalIntensity,
+  type TrainningData,
+  type TrainningInterval,
+} from '@/TrainningTemplate/types';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import {
   Area,
   AreaChart,
@@ -12,18 +17,14 @@ import {
   YAxis,
 } from 'recharts';
 import type { VerticalCoordinatesGenerator } from 'recharts/types/cartesian/CartesianGrid';
-import {
-  TrainningIntervalIntensity,
-  type TrainningData,
-  type TrainningInterval,
-} from '../App';
+import type { ContentType } from 'recharts/types/component/Tooltip';
 import {
   calculatePaceDecimal,
   formatPace,
-  type FitDataRecord,
+  type FitDataRecordWithPace,
 } from '../fit-file';
 
-interface ChartPointData extends FitDataRecord {
+interface ChartPointData extends FitDataRecordWithPace {
   upperBound?: number;
   lowerBound?: number;
   time: number;
@@ -50,14 +51,26 @@ const getColorForInterval = (interval: TrainningInterval): string => {
   }
 };
 
-const CustomizedTooltip = (props) => {
+const CustomizedTooltip: ContentType<number, string> = (props) => {
   const { active, payload, coordinate } = props;
   const isVisible = active && payload && payload.length;
-  // started at: 10/03/2025 10:49:49
-  const currentTime =
-    (payload?.[0]?.payload?.timestamp.getTime() -
-      new Date('2025-10-03 07:49:49').getTime()) /
-    1000;
+
+  const renderTime = (totalSeconds: number) => {
+    const currentTime = new Date(totalSeconds * 1000);
+    const hours = currentTime.getHours();
+    const minutes = currentTime.getMinutes();
+    const seconds = currentTime.getSeconds();
+    const time =
+      (hours ? `${hours.toString().padStart(2, '0')}h` : '') +
+      (minutes ? `${minutes.toString().padStart(2, '0')}m` : '') +
+      (seconds ? `${seconds.toString().padStart(2, '0')}s` : '');
+    return time;
+  };
+
+  const pointData: ChartPointData = payload?.[0]?.payload;
+
+  if (!pointData) return <></>;
+
   return (
     <div
       className="custom-tooltip"
@@ -65,9 +78,9 @@ const CustomizedTooltip = (props) => {
     >
       {isVisible && (
         <>
-          <p>{payload?.[0]?.payload?.formattedPace}</p>
-          <p>{payload?.[0]?.payload?.time}</p>
-          <p>{currentTime}</p>
+          <p>{pointData.formattedPace}</p>
+          <p>{renderTime(pointData.time)}</p>
+          <p>{pointData.time}</p>
           <p>
             x:{coordinate?.x - 80}, y:{coordinate?.y}
           </p>
@@ -106,7 +119,7 @@ interface ChartData {
  * @returns The list of interpolated FitDataRecords with pace.
  */
 const createChartPointsDataArray = (
-  records: FitDataRecord[],
+  records: FitDataRecordWithPace[],
   interpolationLength: number,
   intervals: TrainningInterval[]
 ): ChartPointData[] => {
@@ -153,19 +166,6 @@ const SpeedChart = ({ data }: { data: TrainningData }) => {
   });
 
   const pointsPerPixel = 0.5;
-  const renderTime = (value: Date) => {
-    const initialDate = data.data.activity.timestamp;
-    const currentTime = new Date(value.getTime() - initialDate.getTime());
-    // print currentTime in format 00m00s
-    const hours = currentTime.getHours();
-    const minutes = currentTime.getMinutes();
-    const seconds = currentTime.getSeconds();
-    const time =
-      (hours ? `${hours.toString().padStart(2, '0')}h` : '') +
-      (minutes ? `${minutes.toString().padStart(2, '0')}m` : '') +
-      (seconds ? `${seconds.toString().padStart(2, '0')}s` : '');
-    return time;
-  };
 
   useEffect(() => {
     if (data.data.records?.length) {
@@ -214,8 +214,6 @@ const SpeedChart = ({ data }: { data: TrainningData }) => {
         label: `${altitude.toFixed(0)} m`,
       }));
 
-      console.log(ticksSpeedAxis);
-
       setChartData({
         points,
         intervals,
@@ -258,10 +256,10 @@ const SpeedChart = ({ data }: { data: TrainningData }) => {
                     : intervalsData[i + 1].startRate;
                 const color = intervalData.color;
                 return (
-                  <>
+                  <Fragment key={`stop-grad-speed-${i}`}>
                     <stop offset={start} stopColor={color} />
                     <stop offset={end} stopColor={color} />
-                  </>
+                  </Fragment>
                 );
               })}
             </linearGradient>
@@ -308,18 +306,10 @@ const SpeedChart = ({ data }: { data: TrainningData }) => {
                     : intervalsData[i + 1].startRate;
                 const color = intervalData.color;
                 return (
-                  <>
-                    <stop
-                      key={`stop-gradient-${i}-min`}
-                      offset={start}
-                      stopColor={color}
-                    />
-                    <stop
-                      key={`stop-gradient-${i}-max`}
-                      offset={end}
-                      stopColor={color}
-                    />
-                  </>
+                  <Fragment key={`stop-gradient-${i}-min`}>
+                    <stop offset={start} stopColor={color} />
+                    <stop offset={end} stopColor={color} />
+                  </Fragment>
                 );
               })}
             </linearGradient>

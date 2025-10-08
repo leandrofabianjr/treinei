@@ -1,58 +1,13 @@
-import React, {
-  type ChangeEvent,
-  type FormEvent,
-  useCallback,
-  useState,
-} from 'react';
-
-export interface ZeppTrainningInterval {
-  type: string;
-}
-
-export interface ZeppTrainningIntervalParent {
-  type: 'PARENT';
-  children: ZeppTrainningInterval[];
-}
-
-export interface ZeppTrainningIntervalCircle {
-  type: 'CIRCLE';
-  circleTimes: number;
-  children: ZeppTrainningInterval[];
-}
-
-export interface ZeppTrainningIntervalNode {
-  type: 'NODE';
-  trainingInterval: ZeppTrainningIntervalNodeData;
-}
-export interface ZeppTrainningIntervalNodeData {
-  intervalType: string;
-  intervalUnit: string;
-  intervalUnitValue: string;
-  alertRule: string;
-  alertRuleDetail: string;
-  lengthUnit: number;
-  intervalDesc: string;
-}
-
-export interface ZeppTrainningTemplate {
-  title: string;
-  description: string;
-  trainingIntervals: ZeppTrainningIntervalParent;
-}
-
-interface ZeppTrainningTemplateProps {
-  /**
-   * Callback function that receives the parsed JSON object.
-   * @param data The JSON object fetched from the URL.
-   */
-  onDataRead: (data: ZeppTrainningTemplate | null) => void;
-}
+import { type ChangeEvent, type FormEvent, useCallback, useState } from 'react';
+import type { TrainningTemplateReader } from '..';
+import type { ZeppTrainningTemplate } from './types';
+import { convertZeppTrainningTemplateToTrainningTemplate } from './utils';
 
 /**
  * A React component to fetch JSON data from a user-provided URL.
  * It provides an input field for the URL and manages the fetching state.
  */
-const ZeppTrainningTemplate: React.FC<ZeppTrainningTemplateProps> = ({
+export const ZeppTrainningTemplateUploader: TrainningTemplateReader = ({
   onDataRead,
 }) => {
   const [url, setUrl] = useState('');
@@ -90,7 +45,8 @@ const ZeppTrainningTemplate: React.FC<ZeppTrainningTemplateProps> = ({
         throw new Error('Response is not valid JSON (Content-Type mismatch).');
       }
 
-      const data: ZeppTrainningTemplate = await response.json();
+      const zeppData: ZeppTrainningTemplate = await response.json();
+      const data = convertZeppTrainningTemplateToTrainningTemplate(zeppData);
 
       // Send the fetched JSON object back to the parent element
       onDataRead(data);
@@ -152,4 +108,5 @@ const ZeppTrainningTemplate: React.FC<ZeppTrainningTemplateProps> = ({
   );
 };
 
-export default ZeppTrainningTemplate;
+
+export default ZeppTrainningTemplateUploader;

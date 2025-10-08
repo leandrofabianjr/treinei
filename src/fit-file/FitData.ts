@@ -61,7 +61,7 @@ export interface FitData {
   activity: FitDataActivity;
   sessions: FitDataSession[];
   laps: FitDataLap[];
-  records: FitDataRecord[];
+  records: FitDataRecordWithPace[];
   events: FitDataEvent[];
 };
 
