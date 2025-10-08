@@ -4,10 +4,11 @@ import {
   Button,
   Center,
   Flex,
+  IconButton,
+  Image,
   Menu,
   Portal,
   Stack,
-  useDisclosure,
 } from '@chakra-ui/react';
 import { LuMoon, LuSun } from 'react-icons/lu';
 import { useColorMode, useColorModeValue } from './color-mode';
@@ -37,29 +38,27 @@ const NavLink = (props: Props) => {
 
 export default function Nav() {
   const { colorMode, toggleColorMode } = useColorMode();
-  const { isOpen, onOpen, onClose } = useDisclosure();
   return (
     <>
       <Box bg={useColorModeValue('gray.100', 'gray.900')} px={4}>
         <Flex h={16} alignItems={'center'} justifyContent={'space-between'}>
-          <Box>Logo</Box>
+          <NavLink>
+            <Image w="10" h="10" src="./icon.svg" />
+          </NavLink>
 
           <Flex alignItems={'center'}>
             <Stack direction={'row'} gap={7}>
-              <Button onClick={toggleColorMode}>
+              <IconButton
+                aria-label="Toggle color mode"
+                variant="outline"
+                onClick={toggleColorMode}
+              >
                 {colorMode === 'light' ? <LuMoon /> : <LuSun />}
-              </Button>
+              </IconButton>
 
-              <Menu.Root>
+              <Menu.Root positioning={{ placement: 'bottom-end' }}>
                 <Menu.Trigger asChild>
-                  <Button
-                    variant="plain"
-                    size="sm"
-                    as={Button}
-                    cursor={'pointer'}
-                    rounded={'full'}
-                    minW={0}
-                  >
+                  <Button variant="ghost" size="sm">
                     <Avatar.Root size="sm">
                       <Avatar.Fallback name="Nome do usuário" />
                       <Avatar.Image src="https://avatars.dicebear.com/api/male/username.svg" />
@@ -68,7 +67,7 @@ export default function Nav() {
                 </Menu.Trigger>
 
                 <Portal>
-                  <Menu.Positioner alignItems={'center'}>
+                  <Menu.Positioner>
                     <Menu.Content>
                       <Center>
                         <Avatar.Root size="sm">
