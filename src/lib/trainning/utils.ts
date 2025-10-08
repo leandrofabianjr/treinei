@@ -1,31 +1,58 @@
-import { addPaceToRecord, calculatePaceDecimal, type FitData, type FitDataRecord } from "@/fit-file";
-import { TrainningIntervalIntensity, TrainningTemplateIntervalUnit, type TrainningData, type TrainningInterval, type TrainningTemplate, type TrainningTemplateInterval } from "../types";
-import { calculateDistanceBetweenTimes, getEndOfIntervalFromDistance } from "../utils/distance-calculation";
-
-
+import {
+  addPaceToRecord,
+  calculatePaceDecimal,
+  type FitData,
+  type FitDataRecord,
+} from "@/lib/fit-file";
+import {
+  calculateDistanceBetweenTimes,
+  getEndOfIntervalFromDistance,
+} from "./distance-calculation";
+import {
+  TrainningIntervalIntensity,
+  TrainningTemplateIntervalUnit,
+  type TrainningData,
+  type TrainningInterval,
+  type TrainningTemplate,
+  type TrainningTemplateInterval,
+} from "./types";
 
 const addPaceToRecords = (records: FitDataRecord[]) => {
   return records.map(addPaceToRecord);
-}
+};
 
-const getNextIntervalData = (startTime: Date, interval: TrainningTemplateInterval, fitData: FitData): TrainningInterval => {
+const getNextIntervalData = (
+  startTime: Date,
+  interval: TrainningTemplateInterval,
+  fitData: FitData
+): TrainningInterval => {
   const { unit, unitValue, speedBounds, description } = interval;
-  const intensity = {
-    'caminhada': TrainningIntervalIntensity.Walking,
-    'trote': TrainningIntervalIntensity.Jogging,
-    'z1': TrainningIntervalIntensity.Z1,
-    'z2': TrainningIntervalIntensity.Z2,
-    'z3': TrainningIntervalIntensity.Z3,
-    'z4': TrainningIntervalIntensity.Z4
-  }[description?.trim()?.toLowerCase()] || TrainningIntervalIntensity.None;
+  const intensity =
+    {
+      caminhada: TrainningIntervalIntensity.Walking,
+      trote: TrainningIntervalIntensity.Jogging,
+      z1: TrainningIntervalIntensity.Z1,
+      z2: TrainningIntervalIntensity.Z2,
+      z3: TrainningIntervalIntensity.Z3,
+      z4: TrainningIntervalIntensity.Z4,
+    }[description?.trim()?.toLowerCase()] || TrainningIntervalIntensity.None;
 
-  const intervalData = { startTime, intensity, description, speedBounds } as TrainningInterval;
+  const intervalData = {
+    startTime,
+    intensity,
+    description,
+    speedBounds,
+  } as TrainningInterval;
 
   switch (unit) {
     case TrainningTemplateIntervalUnit.Time:
       {
         const endTime = new Date(startTime.getTime() + unitValue * 1000);
-        const distanceInMeters = calculateDistanceBetweenTimes(fitData.records, startTime, endTime);
+        const distanceInMeters = calculateDistanceBetweenTimes(
+          fitData.records,
+          startTime,
+          endTime
+        );
         intervalData.endTime = endTime;
         intervalData.durationInSeconds = unitValue;
         intervalData.distanceInMeters = distanceInMeters;
@@ -42,7 +69,8 @@ const getNextIntervalData = (startTime: Date, interval: TrainningTemplateInterva
           throw new Error("Fim de intervalo não encontrado!");
         }
         const endTime = endOfInterval.record.timestamp;
-        const durationInSeconds = (endTime.getTime() - startTime.getTime()) / 1000;
+        const durationInSeconds =
+          (endTime.getTime() - startTime.getTime()) / 1000;
         intervalData.endTime = endTime;
         intervalData.durationInSeconds = durationInSeconds;
         intervalData.distanceInMeters = unitValue;
@@ -51,10 +79,12 @@ const getNextIntervalData = (startTime: Date, interval: TrainningTemplateInterva
   }
 
   return intervalData;
-}
+};
 
-
-const createIntervalsData = (fitData: FitData, trainning: TrainningTemplate): TrainningInterval[] => {
+const createIntervalsData = (
+  fitData: FitData,
+  trainning: TrainningTemplate
+): TrainningInterval[] => {
   let currentTime = fitData.activity.timestamp;
   const intervals: TrainningInterval[] = trainning.intervals.map((interval) => {
     const intervalData = getNextIntervalData(currentTime, interval, fitData);
@@ -65,7 +95,10 @@ const createIntervalsData = (fitData: FitData, trainning: TrainningTemplate): Tr
   return intervals;
 };
 
-const createEachDistanceTimesInSeconds = (fitData: FitData, eachMeters = 1000): number[] => {
+const createEachDistanceTimesInSeconds = (
+  fitData: FitData,
+  eachMeters = 1000
+): number[] => {
   const kmTimesInSeconds: number[] = [];
   const startTime = fitData.activity.timestamp;
   let startRecord: FitDataRecord | null = fitData.records[0];
@@ -77,12 +110,15 @@ const createEachDistanceTimesInSeconds = (fitData: FitData, eachMeters = 1000): 
     );
     if (!endOfInterval) break;
     const { index, record } = endOfInterval;
-    kmTimesInSeconds.push((record.timestamp.getTime() - startTime.getTime()) / 1000);
-    startRecord = index == fitData.records.length - 1 ? null : fitData.records[index + 1];
+    kmTimesInSeconds.push(
+      (record.timestamp.getTime() - startTime.getTime()) / 1000
+    );
+    startRecord =
+      index == fitData.records.length - 1 ? null : fitData.records[index + 1];
   }
 
   return kmTimesInSeconds;
-}
+};
 
 const createStatistics = (intervals: TrainningInterval[]) => {
   const totalTime = intervals.reduce(
@@ -98,7 +134,10 @@ const createStatistics = (intervals: TrainningInterval[]) => {
   return { totalTime, totalDistance, averageSpeed, averagePace };
 };
 
-export const buildTrainningData = (fitData: FitData, trainning: TrainningTemplate): TrainningData => {
+export const buildTrainningData = (
+  fitData: FitData,
+  trainning: TrainningTemplate
+): TrainningData => {
   const records = addPaceToRecords(fitData.records);
   const data = { ...fitData, records };
   const intervals = createIntervalsData(data, trainning);
@@ -111,4 +150,4 @@ export const buildTrainningData = (fitData: FitData, trainning: TrainningTemplat
     kmTimesInSeconds,
     statistics,
   };
-}
+};

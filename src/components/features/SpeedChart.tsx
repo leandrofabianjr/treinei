@@ -1,9 +1,14 @@
 import {
+  calculatePaceDecimal,
+  formatPace,
+  type FitDataRecordWithPace,
+} from "@/lib/fit-file";
+import {
   TrainningIntervalIntensity,
   type TrainningData,
   type TrainningInterval,
-} from '@/TrainningTemplate/types';
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+} from "@/lib/trainning/types";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -15,14 +20,9 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from 'recharts';
-import type { VerticalCoordinatesGenerator } from 'recharts/types/cartesian/CartesianGrid';
-import type { ContentType } from 'recharts/types/component/Tooltip';
-import {
-  calculatePaceDecimal,
-  formatPace,
-  type FitDataRecordWithPace,
-} from '../fit-file';
+} from "recharts";
+import type { VerticalCoordinatesGenerator } from "recharts/types/cartesian/CartesianGrid";
+import type { ContentType } from "recharts/types/component/Tooltip";
 
 interface ChartPointData extends FitDataRecordWithPace {
   upperBound?: number;
@@ -35,19 +35,19 @@ interface ChartPointData extends FitDataRecordWithPace {
 const getColorForInterval = (interval: TrainningInterval): string => {
   switch (interval.intensity) {
     case TrainningIntervalIntensity.Walking:
-      return '#3366AAaa';
+      return "#3366AAaa";
     case TrainningIntervalIntensity.Jogging:
-      return '#4499CCaa';
+      return "#4499CCaa";
     case TrainningIntervalIntensity.Z1:
-      return '#66CCCCaa';
+      return "#66CCCCaa";
     case TrainningIntervalIntensity.Z2:
-      return '#FF9966aa';
+      return "#FF9966aa";
     case TrainningIntervalIntensity.Z3:
-      return '#CC3333aa';
+      return "#CC3333aa";
     case TrainningIntervalIntensity.Z4:
-      return '#990000aa';
+      return "#990000aa";
     default:
-      return 'white';
+      return "white";
   }
 };
 
@@ -61,9 +61,9 @@ const CustomizedTooltip: ContentType<number, string> = (props) => {
     const minutes = currentTime.getMinutes();
     const seconds = currentTime.getSeconds();
     const time =
-      (hours ? `${hours.toString().padStart(2, '0')}h` : '') +
-      (minutes ? `${minutes.toString().padStart(2, '0')}m` : '') +
-      (seconds ? `${seconds.toString().padStart(2, '0')}s` : '');
+      (hours ? `${hours.toString().padStart(2, "0")}h` : "") +
+      (minutes ? `${minutes.toString().padStart(2, "0")}m` : "") +
+      (seconds ? `${seconds.toString().padStart(2, "0")}s` : "");
     return time;
   };
 
@@ -74,7 +74,7 @@ const CustomizedTooltip: ContentType<number, string> = (props) => {
   return (
     <div
       className="custom-tooltip"
-      style={{ visibility: isVisible ? 'visible' : 'hidden' }}
+      style={{ visibility: isVisible ? "visible" : "hidden" }}
     >
       {isVisible && (
         <>
@@ -325,7 +325,7 @@ const SpeedChart = ({ data }: { data: TrainningData }) => {
             strokeOpacity={0}
             tickFormatter={(value) =>
               chartData.ticksAltitudeAxis.find((tick) => tick.value === value)
-                ?.label || ''
+                ?.label || ""
             }
             ticks={chartData.ticksAltitudeAxis.map((tick) => tick.value)}
           />

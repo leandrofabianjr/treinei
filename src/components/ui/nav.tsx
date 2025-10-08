@@ -1,71 +1,46 @@
+"use client";
+
 import {
   Avatar,
   Box,
   Button,
   Center,
   Flex,
-  IconButton,
   Image,
   Menu,
   Portal,
   Stack,
-} from '@chakra-ui/react';
-import { LuMoon, LuSun } from 'react-icons/lu';
-import { useColorMode, useColorModeValue } from './color-mode';
-
-interface Props {
-  children: React.ReactNode;
-}
-
-const NavLink = (props: Props) => {
-  const { children } = props;
-
-  return (
-    <Box
-      as="a"
-      px={2}
-      py={1}
-      rounded={'md'}
-      _hover={{
-        textDecoration: 'none',
-        bg: useColorModeValue('gray.200', 'gray.700'),
-      }}
-    >
-      {children}
-    </Box>
-  );
-};
+} from "@chakra-ui/react";
+import Link from "next/link";
+import { useColorMode, useColorModeValue } from "./color-mode";
+import ColorModeToggleButton from "./ColorModeToggleButton";
 
 export default function Nav() {
-  const { colorMode, toggleColorMode } = useColorMode();
+  const { colorMode } = useColorMode();
   return (
     <>
-      <Box bg={useColorModeValue('gray.100', 'gray.900')} px={4}>
-        <Flex h={16} alignItems={'center'} justifyContent={'space-between'}>
-          <NavLink>
-            <Image
-              w="10"
-              h="10"
-              src="./icon.svg"
-              style={
-                colorMode == 'dark'
-                  ? { filter: 'invert(93%) hue-rotate(180deg)' }
-                  : {}
-              }
-            />
-          </NavLink>
+      <Box bg={useColorModeValue("gray.100", "gray.900")} px={4}>
+        <Flex h={16} alignItems={"center"} justifyContent={"space-between"}>
+          <Button variant="ghost" asChild>
+            <Link href="/">
+              <Image
+                w="10"
+                h="10"
+                src="./icon.svg"
+                style={
+                  colorMode == "dark"
+                    ? { filter: "invert(93%) hue-rotate(180deg)" }
+                    : {}
+                }
+              />
+            </Link>
+          </Button>
 
-          <Flex alignItems={'center'}>
-            <Stack direction={'row'} gap={7}>
-              <IconButton
-                aria-label="Toggle color mode"
-                variant="outline"
-                onClick={toggleColorMode}
-              >
-                {colorMode === 'light' ? <LuMoon /> : <LuSun />}
-              </IconButton>
+          <Flex alignItems={"center"}>
+            <Stack direction={"row"} gap={7}>
+              <ColorModeToggleButton />
 
-              <Menu.Root positioning={{ placement: 'bottom-end' }}>
+              <Menu.Root positioning={{ placement: "bottom-end" }}>
                 <Menu.Trigger asChild>
                   <Button variant="ghost" size="sm">
                     <Avatar.Root size="sm">

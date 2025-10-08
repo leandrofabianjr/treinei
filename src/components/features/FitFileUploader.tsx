@@ -1,6 +1,5 @@
-import { useEffect, useState, type ChangeEvent } from 'react';
-import type { FitData } from '../fit-file';
-import { useFitParser } from '../fit-file/useFitParser';
+import { useFitParser, type FitData } from "@/lib/fit-file";
+import { useEffect, useState, type ChangeEvent } from "react";
 
 export interface FitFileUploaderProps {
   onDataRead?: (data: FitData | null) => void;
@@ -18,10 +17,10 @@ const FitFileUploader = ({ onDataRead }: FitFileUploaderProps) => {
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file && file.name.endsWith('.fit')) {
+    if (file && file.name.endsWith(".fit")) {
       setSelectedFile(file);
     } else if (file) {
-      alert('Please select a valid .fit file.');
+      alert("Please select a valid .fit file.");
       setSelectedFile(null);
     } else {
       setSelectedFile(null);
@@ -32,7 +31,7 @@ const FitFileUploader = ({ onDataRead }: FitFileUploaderProps) => {
     <div>
       <input type="file" accept=".fit" onChange={handleFileChange} />
       {loading && <p>⏳ Carregando e Analisando...</p>}
-      {error && <p style={{ color: 'red' }}>🚨 Erro: {error}</p>}
+      {error && <p style={{ color: "red" }}>🚨 Erro: {error}</p>}
     </div>
   );
 };

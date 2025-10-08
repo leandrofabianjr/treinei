@@ -1,4 +1,4 @@
-import type { FitDataRecord } from "../../fit-file";
+import type { FitDataRecord } from "@/lib/fit-file";
 
 // Radius of Earth in meters (mean value)
 const R_EARTH_METERS = 6371000;
@@ -25,17 +25,19 @@ const haversineDistance = (
 
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
   // Distance in meters
   return R_EARTH_METERS * c;
-}
+};
 
 /**
- * Calculates the running distance (in meters) between two specified times 
+ * Calculates the running distance (in meters) between two specified times
  * by summing the Haversine distance between consecutive records.
  * * @param records Array of FIT record messages.
  * @param startTime Target start time (Date object).
@@ -47,7 +49,11 @@ export function calculateDistanceBetweenTimes(
   startTime: Date,
   endTime: Date
 ): number {
-  if (!records || records.length < 2 || startTime.getTime() >= endTime.getTime()) {
+  if (
+    !records ||
+    records.length < 2 ||
+    startTime.getTime() >= endTime.getTime()
+  ) {
     return 0;
   }
 
@@ -85,7 +91,7 @@ export function calculateDistanceBetweenTimes(
     }
 
     // 3. Update the previous record for the next iteration
-    // The previous record only needs to be updated if the current record is the start 
+    // The previous record only needs to be updated if the current record is the start
     // point or inside the window.
     if (currentTimeMs >= targetStartMs) {
       previousRecord = currentRecord;
@@ -117,7 +123,7 @@ export const getEndOfIntervalFromDistance = (
   records: FitDataRecord[],
   startTime: Date,
   distance: number
-): { index: number, record: FitDataRecord } | null => {
+): { index: number; record: FitDataRecord } | null => {
   if (!records || records.length < 2) {
     return null;
   }
@@ -147,7 +153,7 @@ export const getEndOfIntervalFromDistance = (
     }
 
     // 3. Update the previous record for the next iteration
-    // The previous record only needs to be updated if the current record is the start 
+    // The previous record only needs to be updated if the current record is the start
     // point or inside the window.
     if (currentTimeMs >= startTime.getTime()) {
       previousRecord = currentRecord;
@@ -159,4 +165,4 @@ export const getEndOfIntervalFromDistance = (
   }
 
   return null;
-}
+};

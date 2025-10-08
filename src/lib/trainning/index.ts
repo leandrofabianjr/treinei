@@ -1,4 +1,6 @@
-import { type TrainningTemplate } from './types';
+import { type TrainningTemplate } from "./types";
+export * from "./types";
+export { buildTrainningData } from "./utils";
 // import { convertZeppTrainningTemplateToTrainningTemplate, type ZeppTrainningTemplate } from './ZeppTrainningTemplate';
 // import trainningData from './trainning-data.json';
 // export const loadLocalTrainningTemplate = (): TrainningTemplate => {

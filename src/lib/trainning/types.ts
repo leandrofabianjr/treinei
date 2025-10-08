@@ -1,4 +1,4 @@
-import type { FitData } from "@/fit-file";
+import type { FitData } from "@/lib/fit-file";
 
 export enum TrainningTemplateIntervalType {
   WarmUp,
@@ -17,7 +17,7 @@ export interface TrainningTemplateInterval {
   type: TrainningTemplateIntervalType;
   unit: TrainningTemplateIntervalUnit;
   unitValue: number;
-  speedBounds?: { min: number; max: number; };
+  speedBounds?: { min: number; max: number };
   description: string;
 }
 
