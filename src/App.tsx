@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { allExpanded, defaultStyles, JsonView } from 'react-json-view-lite';
-import './App.css';
 import FitFileUploader from './components/FitFileUploader';
 import SpeedChart from './components/SpeedChart';
 import type { FitData } from './fit-file';
@@ -9,6 +8,8 @@ import {
   loadTrainningTemplate,
   type TrainningTemplate,
 } from './TrainningTemplate';
+import { Container, Heading } from '@chakra-ui/react';
+import Nav from './components/ui/nav';
 
 export enum TrainningIntervalIntensity {
   None,
@@ -86,8 +87,9 @@ function App() {
 
   return (
     <>
-      <div>
-        <h2>.FIT File Parser</h2>
+      <Nav />
+      <Container>
+        <Heading>.FIT File Parser</Heading>
         {/* <ZeppTrainningTemplate onDataRead={setTrainning} /> */}
 
         {trainning && (
@@ -118,7 +120,7 @@ function App() {
             </div>
           </>
         )}
-      </div>
+      </Container>
     </>
   );
 }
